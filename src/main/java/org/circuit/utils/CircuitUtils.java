@@ -117,7 +117,7 @@ public class CircuitUtils {
 
 		// Removing port that can't be removed
 		for (int i = 0; i < output.length; i++) {
-			simplify(circuit, canRemove, output[i]);
+			removeFromList(circuit, canRemove, output[i]);
 		}
 
 		for (Integer index : canRemove.descendingSet()) {
@@ -126,27 +126,27 @@ public class CircuitUtils {
 	}
 
 	
-	private static void simplify(Circuit circuit, Set<Integer> canRemove, int index) {
+	private static void removeFromList(Circuit circuit, Set<Integer> canRemove, int index) {
 		Port port = circuit.get(index); 
 		if (!(port instanceof PortInput)) {
 			canRemove.remove(index);
 
 			if (port instanceof PortAnd) {
-				simplify(circuit, canRemove, ((PortAnd) port).getMinor());
-				simplify(circuit, canRemove, ((PortAnd) port).getMajor());
+				removeFromList(circuit, canRemove, ((PortAnd) port).getMinor());
+				removeFromList(circuit, canRemove, ((PortAnd) port).getMajor());
 			} else if (port instanceof PortOr) {
-				simplify(circuit, canRemove, ((PortOr) port).getMinor());
-				simplify(circuit, canRemove, ((PortOr) port).getMajor());
+				removeFromList(circuit, canRemove, ((PortOr) port).getMinor());
+				removeFromList(circuit, canRemove, ((PortOr) port).getMajor());
 			} else if (port instanceof PortNand) {
-				simplify(circuit, canRemove, ((PortNand) port).getMinor());
-				simplify(circuit, canRemove, ((PortNand) port).getMajor());
+				removeFromList(circuit, canRemove, ((PortNand) port).getMinor());
+				removeFromList(circuit, canRemove, ((PortNand) port).getMajor());
 			} else if (port instanceof PortNor) {
-				simplify(circuit, canRemove, ((PortNor) port).getMinor());
-				simplify(circuit, canRemove, ((PortNor) port).getMajor());
+				removeFromList(circuit, canRemove, ((PortNor) port).getMinor());
+				removeFromList(circuit, canRemove, ((PortNor) port).getMajor());
 			} else if (port instanceof PortNot) {
-				simplify(circuit, canRemove, ((PortNot) port).getIndex());
+				removeFromList(circuit, canRemove, ((PortNot) port).getIndex());
 			} else if (port instanceof PortMemory) {
-				simplify(circuit, canRemove, ((PortMemory) port).getIndex());
+				removeFromList(circuit, canRemove, ((PortMemory) port).getIndex());
 			}
 			else {
 				throw new RuntimeException("Inconsistency!");

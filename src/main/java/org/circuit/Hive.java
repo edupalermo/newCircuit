@@ -4,6 +4,7 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
@@ -87,12 +88,15 @@ public class Hive {
 			persistIfThereIsNewChamp(population, context, lastBetter);
 			lastBetter = population.get(0);
 			
+			Population.genocide(context, population, POPULATION_LIMIT);			
+			
 			Context newContext = getLatestContext(problem);
 			if (contextChanged(context, newContext)) {
 				logger.info("Detected a change in the Context. Reevaluating the population.");
 				context = newContext;
 				population = Population.reEvaluatePopulation(newContext, population);
 			}
+			System.gc();
 		}
 	}
 	
@@ -108,6 +112,7 @@ public class Hive {
 		
 		return changed;
 	}
+	
 	
 	private static void persistIfThereIsNewChamp(List<Circuit> population, Context context, Circuit lastBetter) {
 		EvaluatorWrapper evaluatorWrapper =context.getEvaluatorWrapper(); 
@@ -135,24 +140,30 @@ public class Hive {
 		TrainingSet trainingSet = context.getTrainingSetWrapper().getTrainingSet(); 
 		Evaluator evaluator = context.getEvaluatorWrapper().getEvaluator();
 		
-		logger.info("====================================================================");
+		Circuit betterCircuit = population.get(0);
+		
+		logger.info("=====================================================");
 		for (int i = 0; i < Math.min(30, population.size()); i++) {
-			logger.info(String.format("[%5d] %s", i + 1, CircuitToString.toSmallString(evaluator, population.get(i))));
+			logger.info(String.format("[%5d] %s %.3f", i + 1, CircuitToString.toSmallString(evaluator, population.get(i)), evaluator.similarity(betterCircuit, population.get(i))));
 		}
 
 		if (population.size() > 3) {
 			int limit = Math.min(POPULATION_LIMIT, population.size());
 			for (int i = limit - 3; i < limit; i++) {
-				logger.info(String.format("[%5d] %s", i + 1, CircuitToString.toSmallString(evaluator, population.get(i))));
+				logger.info(String.format("[%5d] %s %.3f", i + 1, CircuitToString.toSmallString(evaluator, population.get(i)), evaluator.similarity(betterCircuit, population.get(i))));
 			}
 		}
 
 		DecimalFormat myFormatter = new DecimalFormat("###,###");
 		int populationSize = population.size();
 		int totalHits = CircuitUtils.getTotalOfPossibleHits(trainingSet);
-		String quantityOfPorts = myFormatter.format(sumTotalOfPort(population));
+		int totalOfPorts = sumTotalOfPort(population);
+		String quantityOfPorts = myFormatter.format(totalOfPorts);
 		
-		logger.info(String.format("Population [%d] Total Hits [%d] Total of Ports [%s]", populationSize, totalHits, quantityOfPorts));
+		double workload = 1000d * ((double)populationSize / (double)totalOfPorts);
+		
+		logger.info(String.format("Population [%d] Total Hits [%d]", populationSize, totalHits));
+		logger.info(String.format("Total of Ports [%s] Workload [%.2f]", quantityOfPorts, workload));
 
 	}
 	

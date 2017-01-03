@@ -1,12 +1,17 @@
 package org.circuit;
 
+import java.util.List;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import org.circuit.circuit.Circuit;
 import org.circuit.circuit.CircuitToString;
 import org.circuit.dao.CircuitWrapperDao;
 import org.circuit.dao.EvaluatorWrapperDao;
+import org.circuit.dao.GradeDao;
 import org.circuit.dao.ProblemDao;
 import org.circuit.dao.TrainingSetWrapperDao;
+import org.circuit.entity.CircuitWrapper;
 import org.circuit.entity.EvaluatorWrapper;
 import org.circuit.entity.Problem;
 import org.circuit.entity.TrainingSetWrapper;
@@ -16,9 +21,9 @@ import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
-public class DatabaseDump {
+public class DatabaseUpdateCircuits {
 	
-	private static final Logger logger = Logger.getLogger(DatabaseDump.class);
+	private static final Logger logger = Logger.getLogger(DatabaseUpdateCircuits.class);
 
 	private static ApplicationContext springContext = null;
 	
@@ -34,6 +39,7 @@ public class DatabaseDump {
 			EvaluatorWrapperDao evaluatorWrapperDao = springContext.getBean(EvaluatorWrapperDao.class);
 			TrainingSetWrapperDao trainingSetWrapperDao = springContext.getBean(TrainingSetWrapperDao.class);
 			CircuitWrapperDao circuitWrapperDao = springContext.getBean(CircuitWrapperDao.class);
+			GradeDao gradeDao = springContext.getBean(GradeDao.class);
 			
 			EvaluatorWrapper evaluatorWrapper = evaluatorWrapperDao.findLatest(problem);
 			TrainingSetWrapper trainingSetWrapper = trainingSetWrapperDao.findLatest(problem);
@@ -41,16 +47,18 @@ public class DatabaseDump {
 			Evaluator evaluator = evaluatorWrapper.getEvaluator();
 			TrainingSet trainingSet = trainingSetWrapper.getTrainingSet();
 			
-			logger.info(String.format("Last Training Set Id %d Last Evaluator Id %d", trainingSetWrapper.getId(), evaluatorWrapper.getId()));
-
-			for (int i = 0; i < 30; i++) {
-				String query = evaluator.getByIndex(problem, trainingSetWrapper, i);
-				Circuit circuit = circuitWrapperDao.findByQuery(evaluatorWrapper, query);
-				if (circuit != null) {
-					long initial = System.currentTimeMillis();
-					evaluator.evaluate(trainingSet, circuit);
-					logger.info(String.format("[%d] %s %d", (i + 1), CircuitToString.toSmallString(evaluator, circuit), (System.currentTimeMillis() - initial)));
+			
+			
+			List<CircuitWrapper> list = circuitWrapperDao.findWithoutGrades(evaluatorWrapper, trainingSetWrapper);
+			
+			for (CircuitWrapper circuitWrapper : list) {
+				Circuit circuit = circuitWrapper.getCircuit();
+				evaluator.evaluate(trainingSet, circuit);
+				for (Pair<String, Boolean> pair : evaluator.getOrders()) {
+					gradeDao.create(circuitWrapper, trainingSetWrapper, evaluatorWrapper, pair.getKey(), circuit.getBuffer(pair.getKey(), Integer.class).intValue());
 				}
+				
+				logger.info(String.format("%s", CircuitToString.toSmallString(evaluator, circuit)));
 			}
 
 		} catch (BeansException e) {

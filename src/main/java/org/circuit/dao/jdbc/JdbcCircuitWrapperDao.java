@@ -12,9 +12,11 @@ import javax.sql.DataSource;
 
 import org.circuit.circuit.Circuit;
 import org.circuit.dao.CircuitWrapperDao;
+import org.circuit.dao.ProblemDao;
 import org.circuit.entity.CircuitWrapper;
 import org.circuit.entity.EvaluatorWrapper;
 import org.circuit.entity.Problem;
+import org.circuit.entity.TrainingSetWrapper;
 import org.circuit.utils.IoUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -29,6 +31,9 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public class JdbcCircuitWrapperDao implements CircuitWrapperDao {
+	
+	@Autowired
+	private ProblemDao problemDao;
 	
 	private JdbcTemplate jdbcTemplate;
 	private NamedParameterJdbcTemplate namedParameterJdbcTemplate ;
@@ -69,7 +74,7 @@ public class JdbcCircuitWrapperDao implements CircuitWrapperDao {
 	public Circuit findByQuery(EvaluatorWrapper evaluatorWrapper, String sql) {
 		
 		MapSqlParameterSource parameters = new MapSqlParameterSource();
-		parameters.addValue("trainingSetId", evaluatorWrapper.getId());
+		parameters.addValue("evaluatorId", evaluatorWrapper.getId());
 		
     	List<Circuit> list = this.namedParameterJdbcTemplate.query(
     	        sql,
@@ -94,4 +99,31 @@ public class JdbcCircuitWrapperDao implements CircuitWrapperDao {
 	}
 
 
+	@Override
+	public List<CircuitWrapper> findWithoutGrades(EvaluatorWrapper evaluatorWrapper, TrainingSetWrapper trainingSetWrapper) {
+		
+		MapSqlParameterSource parameters = new MapSqlParameterSource();
+		parameters.addValue("evaluatorId", evaluatorWrapper.getId());
+		parameters.addValue("trainingSetId", trainingSetWrapper.getId());
+		
+		String sql = "select c.* from circuit c where not exists(select 1 from grade g where g.circuit_id = c.circuit_id and g.evaluator_id = :evaluatorId and g.training_set_id = :trainingSetId) ";
+		
+    	List<CircuitWrapper> list = this.namedParameterJdbcTemplate.query(
+    	        sql,
+    	        parameters,
+    	        new RowMapper<CircuitWrapper>() {
+    	            public CircuitWrapper mapRow(ResultSet rs, int rowNum) throws SQLException {
+    	            	CircuitWrapper circuitWrapper = new CircuitWrapper();
+    	            	circuitWrapper.setId(rs.getInt("circuit_id"));
+    	            	circuitWrapper.setCircuit(IoUtils.base64ToObject(rs.getString("object"), Circuit.class));
+    	            	circuitWrapper.setCreated(rs.getTimestamp("created").toLocalDateTime());
+    	            	circuitWrapper.setProblem(problemDao.getById(rs.getInt("problem_id")));
+    	                return circuitWrapper;
+    	            }
+    	        });
+    	
+    	return list;
+	}
+
+	
 }

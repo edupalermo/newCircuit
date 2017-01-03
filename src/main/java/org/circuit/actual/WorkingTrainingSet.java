@@ -18,7 +18,9 @@ public class WorkingTrainingSet extends TrainingSet {
 		this.add(new StringSolution("h", "consoante"));
 		this.add(new StringSolution("i", "vogal"));
 		
+		this.add(new StringSolution("l", "consoante"));
 		this.add(new StringSolution("m", "consoante"));
+		this.add(new StringSolution("n", "consoante"));
 		this.add(new StringSolution("o", "vogal"));
 		this.add(new StringSolution("p", "consoante"));
 		this.add(new StringSolution("q", "consoante"));
@@ -43,6 +45,7 @@ public class WorkingTrainingSet extends TrainingSet {
 		this.add(new StringSolution("1", "número"));
 		this.add(new StringSolution("2", "número"));
 		this.add(new StringSolution("4", "número"));
+		this.add(new StringSolution("5", "número"));
 		this.add(new StringSolution("8", "número"));
 		this.add(new StringSolution("9", "número"));
 		

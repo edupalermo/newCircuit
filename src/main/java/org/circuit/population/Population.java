@@ -52,6 +52,8 @@ public class Population {
 		final int inputSize =  context.getTrainingSetWrapper().getTrainingSet().getInputSize();
 
 		while (!period.alarm()) {
+			
+			//long initial = System.currentTimeMillis();
 
 			Circuit newCircuit = null;
 
@@ -62,7 +64,8 @@ public class Population {
 				break;
 			case RANDOM_ENRICH:
 				newCircuit = (Circuit) getCircuitRandomCircuitFromPopulation(population).clone();
-				CircuitRandomGenerator.randomEnrich(newCircuit, 1 + ((15 * newCircuit.size()) / 100));
+				double enrichPercent = 10d;
+				CircuitRandomGenerator.randomEnrich(newCircuit, (int)(1 + ((enrichPercent * newCircuit.size()) / 100)));
 				break;
 			case CIRCUITS_SCRABLE: {
 				Circuit c1 = (Circuit) getCircuitRandomCircuitFromPopulation(population).clone();
@@ -93,14 +96,16 @@ public class Population {
 
 				break;
 			case RANDOM_FROM_DATABASE: {
-				logger.info("Ping!!!");
 				CircuitWrapperDao circuitWrapperDao = Application.springContext.getBean(CircuitWrapperDao.class);
-				String query = evaluator.getByIndex(context.getProblem(), context.getTrainingSetWrapper(), RandomUtils.raffle(10));
+				int raffled = RandomUtils.raffle(50);
+				String query = evaluator.getByIndex(context.getProblem(), context.getTrainingSetWrapper(), raffled);
 				newCircuit = circuitWrapperDao.findByQuery(evaluatorWrapper, query);
 				
 				if (newCircuit == null) {
+					logger.info(String.format("Migrating failed"));
 					continue;
 				}
+				logger.info(String.format("Migrating [%d]...", raffled));
 				
 			}
 
@@ -138,10 +143,43 @@ public class Population {
 				orderedAdd(population, evaluator.getComparator(), simplifiedCircuit);
 				
 			}
+			
+			//logger.info(String.format("Took %d", (System.currentTimeMillis() - initial)));
 
 		}
 
 	}
+	
+	public static void genocide(Context context, List<Circuit> population, int populationLimit) {
+		if (population.size() < populationLimit) {
+			return;
+		}
+		
+		Evaluator evaluator = context.getEvaluatorWrapper().getEvaluator();
+		TrainingSet trainingSet = context.getTrainingSetWrapper().getTrainingSet();
+		Comparator<Circuit> comparator = evaluator.getComparator();
+		int inputSize = context.getTrainingSetWrapper().getTrainingSet().getInputSize();
+		
+		Circuit betterCircuit = population.get(0);
+		Circuit worstCircuit = population.get(populationLimit - 1);
+		
+		if (evaluator.similarity(betterCircuit, worstCircuit) > 0.5d) {
+			logger.warn("Genocide is taking place...");
+			
+			for (Circuit c : population) {
+				c.clear();
+			}
+			population.clear();
+			
+			ThreadLocalRandom random = ThreadLocalRandom.current();
+			for (int i = 0; i < populationLimit / 10; i++) {
+				Circuit newCircuit = CircuitRandomGenerator.randomGenerate(inputSize, random.nextInt(300, 1000));
+				evaluator.evaluate(trainingSet, newCircuit);
+				orderedAdd(population, comparator, newCircuit);
+			}
+		}
+	}
+
 	
 	private static int orderedAdd(List<Circuit> population, Comparator<Circuit> comparator, Circuit newCircuit) {
 		

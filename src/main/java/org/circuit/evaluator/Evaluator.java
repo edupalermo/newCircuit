@@ -18,5 +18,7 @@ public interface Evaluator {
 	List<Pair<String,Boolean>> getOrders();
 	
 	String getByIndex(Problem problem, TrainingSetWrapper trainingSetWrapper, int index);
+	
+	double similarity(Circuit c1, Circuit c2);
 
 }
