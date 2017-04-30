@@ -11,12 +11,16 @@ public class Period {
 	}
 	
 	public boolean alarm() {
-		long current = System.currentTimeMillis()
+		long current = System.currentTimeMillis();
 		boolean answer = (current - tick) > delta;
 		if (answer) {
 			this.tick = current;
 		}
 		return answer;
 	}
+	
+//	public String vid() {
+//		return PeriodFormat.getDefault().print(duration.toPeriod());
+//	}
 
 }

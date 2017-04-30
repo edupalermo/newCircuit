@@ -120,7 +120,7 @@ public class Population {
 				newCircuit = circuitWrapperDao.findByQuery(evaluatorWrapper, query);
 				
 				if (newCircuit == null) {
-					logger.error("Fail to receive a new circuit from database!");
+					logger.error(String.format("Fail to receive [%d] a new circuit from database!", raffled));
 					continue;
 				}
 				logger.info(String.format("Received a new circuit from database [%d]!", raffled));
