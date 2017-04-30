@@ -7,3 +7,10 @@ connect 'jdbc:derby://localhost:1527/CircuitDb';
 
 mvn dependency:copy-dependencies
 
+
+
+
+Start o database 
+c:\java\db-derby-10.13.1.1-bin\bin\startNetworkServer
+Execute queries in the database
+connect 'jdbc:derby://localhost:1527/CircuitDb';

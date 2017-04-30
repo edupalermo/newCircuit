@@ -4,7 +4,6 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
@@ -26,7 +25,6 @@ import org.circuit.population.Population;
 import org.circuit.solution.TrainingSet;
 import org.circuit.utils.CircuitUtils;
 import org.springframework.beans.BeansException;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class Hive {
@@ -189,7 +187,7 @@ public class Hive {
 		
 		if (circuit == null) {
 			final int inputSize = context.getTrainingSetWrapper().getTrainingSet().getInputSize();
-			circuit  = CircuitRandomGenerator.randomGenerate(inputSize, 500);
+			circuit  = CircuitRandomGenerator.randomGenerate(inputSize, 500, context.getProblem().getUseMemory());
 		}
 		return circuit;
 	}

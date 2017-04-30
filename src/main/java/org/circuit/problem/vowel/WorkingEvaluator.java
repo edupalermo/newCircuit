@@ -1,4 +1,4 @@
-package org.circuit.actual;
+package org.circuit.problem.vowel;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.log4j.Logger;
 import org.circuit.circuit.Circuit;
 import org.circuit.circuit.CircuitHitsEvaluator;
 import org.circuit.circuit.CircuitToString;
@@ -15,6 +16,8 @@ import org.circuit.evaluator.Evaluator;
 import org.circuit.solution.TrainingSet;
 
 public class WorkingEvaluator implements Evaluator, Serializable {
+	
+	private final static Logger logger = Logger.getLogger(WorkingEvaluator.class);
 
 	private static final long serialVersionUID = 1L;
 	
@@ -53,6 +56,13 @@ public class WorkingEvaluator implements Evaluator, Serializable {
 						
 					}
 					
+				}
+				
+				
+				if (c1.size() != c2.size()) {
+					logger.warn("They should have the same size!");
+					logger.warn(CircuitToString.toString(getOuter(), c1));
+					logger.warn(CircuitToString.toString(getOuter(), c2));
 				}
 				
 				int i = c1.size() - 1;

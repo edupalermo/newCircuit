@@ -28,19 +28,26 @@ public class Population {
 	
 	private static final Logger logger = Logger.getLogger(Population.class);
 	
-	private static final boolean CHECK_CONSISTENCY = true;
+	private static final boolean CHECK_CONSISTENCY = false;
 	
 	private static final int PERIOD_ENRICHMENT = 10000;
+	
+	private static final double ENRICH_PERCENTAGE = 10d;
+	
+	private static long lastDatabaseQuery = System.currentTimeMillis();
+	
+	private static final long PERIOD_DATABASE_QUERY = 5 * 60 * 1000;
 	
 	public static void enrich(Context context, List<Circuit> population) {
 		
 		EvaluatorWrapper evaluatorWrapper = context.getEvaluatorWrapper();
 		
 		RandomWeight<Method> methodChosser = new RandomWeight<Method>();
-		methodChosser.add(10000, Method.RANDOM_ENRICH);
+		methodChosser.add(5000, Method.RANDOM_ENRICH);
+		methodChosser.add(5000, Method.BETTER_RANDOM_ENRICH);
 		methodChosser.add(50, Method.SCRAMBLE_WITH_NEW_RANDOM);
 		methodChosser.add(10, Method.CIRCUITS_SCRABLE);
-		methodChosser.add(5, Method.RANDOM_FROM_DATABASE);
+		methodChosser.add(1, Method.RANDOM_FROM_DATABASE);
 		methodChosser.add(1, Method.RANDOM_CIRCUIT);
 
 		Period period = new Period(PERIOD_ENRICHMENT);
@@ -57,19 +64,30 @@ public class Population {
 
 			Circuit newCircuit = null;
 
-			Method method = methodChosser.next();
+			Method method = null;
+			if (System.currentTimeMillis() - lastDatabaseQuery > PERIOD_DATABASE_QUERY) {
+				method = Method.RANDOM_FROM_DATABASE;
+				lastDatabaseQuery = System.currentTimeMillis();
+			}
+			else {
+				method = methodChosser.next();
+			}
+			
 			switch (method) {
 			case RANDOM_CIRCUIT:
-				newCircuit = CircuitRandomGenerator.randomGenerate(inputSize, random.nextInt(300, 1000));
+				newCircuit = CircuitRandomGenerator.randomGenerate(inputSize, random.nextInt(300, 1000), context.getProblem().getUseMemory());
 				break;
 			case RANDOM_ENRICH:
 				newCircuit = (Circuit) getCircuitRandomCircuitFromPopulation(population).clone();
-				double enrichPercent = 10d;
-				CircuitRandomGenerator.randomEnrich(newCircuit, (int)(1 + ((enrichPercent * newCircuit.size()) / 100)));
+				CircuitRandomGenerator.randomEnrich(newCircuit, (int)(1 + ((ENRICH_PERCENTAGE * newCircuit.size()) / 100)), context.getProblem().getUseMemory());
+				break;
+			case BETTER_RANDOM_ENRICH:
+				newCircuit = (Circuit) population.get(0).clone();
+				CircuitRandomGenerator.randomEnrich(newCircuit, (int)(1 + ((ENRICH_PERCENTAGE * newCircuit.size()) / 100)), context.getProblem().getUseMemory());
 				break;
 			case CIRCUITS_SCRABLE: {
 				Circuit c1 = (Circuit) getCircuitRandomCircuitFromPopulation(population).clone();
-				Circuit c2 = getCircuitRandomCircuitFromPopulation(population);
+				Circuit c2 = (Circuit) getCircuitRandomCircuitFromPopulation(population).clone();
 
 				//logger.info(String.format("Method SCRAMBLE %d %d", c1.size(), c2.size()));
 				if (c1.size() + c2.size() > 1500) {
@@ -83,7 +101,7 @@ public class Population {
 				break;
 			case SCRAMBLE_WITH_NEW_RANDOM: {
 				Circuit c1 = (Circuit) getCircuitRandomCircuitFromPopulation(population).clone();
-				Circuit c2 = CircuitRandomGenerator.randomGenerate(inputSize, random.nextInt(300, 1500));
+				Circuit c2 = CircuitRandomGenerator.randomGenerate(inputSize, random.nextInt(300, 1500), context.getProblem().getUseMemory());
 
 				//logger.info(String.format("Method SCRAMBLE WITH RANDOM %d %d", c1.size(), c2.size()));
 				if (c1.size() + c2.size() > 1500) {
@@ -102,10 +120,10 @@ public class Population {
 				newCircuit = circuitWrapperDao.findByQuery(evaluatorWrapper, query);
 				
 				if (newCircuit == null) {
-					logger.info(String.format("Migrating failed"));
+					logger.error("Fail to receive a new circuit from database!");
 					continue;
 				}
-				logger.info(String.format("Migrating [%d]...", raffled));
+				logger.info(String.format("Received a new circuit from database [%d]!", raffled));
 				
 			}
 
@@ -134,7 +152,7 @@ public class Population {
 			if (orderedAdd(population, evaluator.getComparator(), newCircuit) == 0) {
 				Circuit simplifiedCircuit = (Circuit) newCircuit.clone();
 				simplifiedCircuit = CircuitScramble.join(trainingSet, simplifiedCircuit, lastBetter);
-				if (simplifiedCircuit.size() > 3000) {
+				if (simplifiedCircuit.size() > 3000) { // This is done in better simplify, but some time it is better to do it first or we can run out of memory
 					CircuitUtils.simplifyByRemovingUnsedPorts(trainingSet, simplifiedCircuit);
 				}
 				CircuitUtils.betterSimplify(trainingSet, simplifiedCircuit);
@@ -173,7 +191,7 @@ public class Population {
 			
 			ThreadLocalRandom random = ThreadLocalRandom.current();
 			for (int i = 0; i < populationLimit / 10; i++) {
-				Circuit newCircuit = CircuitRandomGenerator.randomGenerate(inputSize, random.nextInt(300, 1000));
+				Circuit newCircuit = CircuitRandomGenerator.randomGenerate(inputSize, random.nextInt(300, 1000), context.getProblem().getUseMemory());
 				evaluator.evaluate(trainingSet, newCircuit);
 				orderedAdd(population, comparator, newCircuit);
 			}

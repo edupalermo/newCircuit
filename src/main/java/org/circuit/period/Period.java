@@ -11,9 +11,10 @@ public class Period {
 	}
 	
 	public boolean alarm() {
-		boolean answer = (System.currentTimeMillis() - tick) > delta;
+		long current = System.currentTimeMillis()
+		boolean answer = (current - tick) > delta;
 		if (answer) {
-			this.tick = System.currentTimeMillis();
+			this.tick = current;
 		}
 		return answer;
 	}

@@ -96,7 +96,7 @@ public class TestBetter {
 		} catch (Exception e) {
 			answer = "error";
 		}
-		System.out.println(c + " [" + answer + "]");
+		logger.info(c + " [" + answer + "]");
 		
 	}
 	

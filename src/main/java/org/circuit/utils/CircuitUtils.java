@@ -15,7 +15,8 @@ import org.circuit.pool.StatePool;
 import org.circuit.port.Port;
 import org.circuit.port.PortAnd;
 import org.circuit.port.PortInput;
-import org.circuit.port.PortMemory;
+import org.circuit.port.PortMemoryMinorResetMajorSet;
+import org.circuit.port.PortMemoryMinorSetMajorReset;
 import org.circuit.port.PortNand;
 import org.circuit.port.PortNor;
 import org.circuit.port.PortNot;
@@ -145,8 +146,12 @@ public class CircuitUtils {
 				removeFromList(circuit, canRemove, ((PortNor) port).getMajor());
 			} else if (port instanceof PortNot) {
 				removeFromList(circuit, canRemove, ((PortNot) port).getIndex());
-			} else if (port instanceof PortMemory) {
-				removeFromList(circuit, canRemove, ((PortMemory) port).getIndex());
+			} else if (port instanceof PortMemoryMinorResetMajorSet) {
+				removeFromList(circuit, canRemove, ((PortMemoryMinorResetMajorSet) port).getMinor());
+				removeFromList(circuit, canRemove, ((PortMemoryMinorResetMajorSet) port).getMajor());
+			} else if (port instanceof PortMemoryMinorSetMajorReset) {
+				removeFromList(circuit, canRemove, ((PortMemoryMinorSetMajorReset) port).getMinor());
+				removeFromList(circuit, canRemove, ((PortMemoryMinorSetMajorReset) port).getMajor());
 			}
 			else {
 				throw new RuntimeException("Inconsistency!");

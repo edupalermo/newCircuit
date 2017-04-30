@@ -1,11 +1,10 @@
 package org.circuit;
 
 import org.apache.log4j.Logger;
-import org.circuit.actual.WorkingEvaluator;
 import org.circuit.dao.EvaluatorWrapperDao;
 import org.circuit.dao.ProblemDao;
-import org.circuit.entity.EvaluatorWrapper;
 import org.circuit.entity.Problem;
+import org.circuit.problem.vowel.WorkingEvaluator;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;

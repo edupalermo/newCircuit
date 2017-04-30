@@ -26,13 +26,14 @@ public class JdbcProblemDao implements ProblemDao {
     @Override
     public Problem findByName(String name) {
     	List<Problem> list = this.jdbcTemplate.query(
-    	        "select problem_id, name from problem where name = ?",
+    	        "select problem_id, name, use_memory from problem where name = ?",
     	        new Object[]{name},
     	        new RowMapper<Problem>() {
     	            public Problem mapRow(ResultSet rs, int rowNum) throws SQLException {
     	                Problem problem = new Problem();
     	                problem.setId(rs.getInt("problem_id"));
     	                problem.setName(rs.getString("name"));
+    	                problem.setUseMemory(rs.getInt("use_memory") > 0);
     	                return problem;
     	            }
     	        });
@@ -52,13 +53,14 @@ public class JdbcProblemDao implements ProblemDao {
     @Override
     public Problem getById(int id) {
     	Problem problem = this.jdbcTemplate.queryForObject(
-    	        "select problem_id, name from problem where problem_id = ?",
+    	        "select problem_id, name, use_memory from problem where problem_id = ?",
     	        new Integer[]{id},
     	        new RowMapper<Problem>() {
     	            public Problem mapRow(ResultSet rs, int rowNum) throws SQLException {
     	                Problem problem = new Problem();
     	                problem.setId(rs.getInt("problem_id"));
     	                problem.setName(rs.getString("name"));
+    	                problem.setUseMemory(rs.getInt("use_memory") > 0);
     	                return problem;
     	            }
     	        });

@@ -1,16 +1,15 @@
 package org.circuit;
 
-import org.apache.log4j.Logger;
-import org.circuit.actual.WorkingTrainingSet;
 import org.circuit.dao.ProblemDao;
 import org.circuit.dao.TrainingSetWrapperDao;
 import org.circuit.entity.Problem;
+import org.circuit.problem.vowel.WorkingTrainingSet;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class RecordNewTraningSet {
-	private static final Logger logger = Logger.getLogger(RecordNewTraningSet.class);
+	//private static final Logger logger = Logger.getLogger(RecordNewTraningSet.class);
 	
 	public static void main(String[] args) {
 		

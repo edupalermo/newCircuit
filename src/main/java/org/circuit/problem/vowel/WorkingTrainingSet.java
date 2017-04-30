@@ -1,4 +1,4 @@
-package org.circuit.actual;
+package org.circuit.problem.vowel;
 
 import org.circuit.solution.StringSolution;
 import org.circuit.solution.TrainingSet;

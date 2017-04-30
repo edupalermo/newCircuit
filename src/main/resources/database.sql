@@ -7,6 +7,7 @@ DROP TABLE PROBLEM;
 CREATE TABLE PROBLEM (
 	PROBLEM_ID INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY (START WITH 1, INCREMENT BY 1),
 	NAME varchar(255) NOT NULL,
+	USE_MEMORY INTEGER NOT NULL,
 	CREATED TIMESTAMP NOT NULL,
 	CONSTRAINT PROBLEM_PK PRIMARY KEY (PROBLEM_ID),
 	CONSTRAINT PROBLEM_UK UNIQUE (NAME)
@@ -54,4 +55,5 @@ CREATE TABLE GRADE (
 	CONSTRAINT GRADE_EVALUATOR_FK FOREIGN KEY (EVALUATOR_ID) REFERENCES EVALUATOR (EVALUATOR_ID)
 );
 
-insert into problem (name, created) values ('CHAR_TYPE', current_timestamp);
+insert into problem (name, use_memory , created) values ('CHAR_TYPE', 1, current_timestamp);
+insert into problem (name, use_memory , created) values ('SPORTING_BET', 0, current_timestamp);
