@@ -29,7 +29,7 @@ public abstract class Port implements Serializable, Comparable<Port>, Cloneable 
 
 	public static Port random(int size, boolean useMemory) {
 		ThreadLocalRandom random = ThreadLocalRandom.current();
-		switch (random.nextInt(useMemory ? 7 : 5)) {
+		switch (random.nextInt(useMemory ? 6 : 5)) {
 		case 0:
 			return PortAnd.random(size);
 		case 1:
@@ -41,9 +41,7 @@ public abstract class Port implements Serializable, Comparable<Port>, Cloneable 
 		case 4:
 			return PortNot.random(size);
 		case 5:
-			return PortMemoryMinorResetMajorSet.random(size);
-		case 6:
-			return PortMemoryMinorSetMajorReset.random(size);
+			return PortMemorySetReset.random(size);
 		default:
 			throw new RuntimeException("Inconsistency");
 		}

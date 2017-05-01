@@ -9,14 +9,14 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
+import org.apache.log4j.Logger;
 import org.circuit.circuit.Circuit;
 import org.circuit.circuit.CircuitOutputGenerator;
 import org.circuit.pool.StatePool;
 import org.circuit.port.Port;
 import org.circuit.port.PortAnd;
 import org.circuit.port.PortInput;
-import org.circuit.port.PortMemoryMinorResetMajorSet;
-import org.circuit.port.PortMemoryMinorSetMajorReset;
+import org.circuit.port.PortMemorySetReset;
 import org.circuit.port.PortNand;
 import org.circuit.port.PortNor;
 import org.circuit.port.PortNot;
@@ -27,7 +27,7 @@ import org.circuit.solution.TrainingSet;
 
 public class CircuitUtils {
 
-	// private static final Logger logger = LoggerFactory.getLogger(CircuitUtils.class);
+	private static final Logger logger = Logger.getLogger(CircuitUtils.class);
 
 	// Remove redundant ports
 	public static void simplify(TrainingSet trainingSet, Circuit circuit) {
@@ -88,6 +88,12 @@ public class CircuitUtils {
 			evaluateRepetition(circuit, same, solution);
 		}
 
+//		for (Map.Entry<Integer, List<Integer>> entry : same.entrySet()) {
+//			if (entry.getValue().size() > 0) {
+//				logger.info(String.format("%d - %s", entry.getKey().intValue(), entry.getValue().toString()));
+//			}
+//		}
+	
 		final int inputSize = trainingSet.getInputSize();
 
 		for (int i = inputSize; i < circuit.size(); i++) {
@@ -100,6 +106,23 @@ public class CircuitUtils {
 			}
 		}
 	}
+
+	
+	public static void removeOverhead(TrainingSet trainingSet, Circuit circuit) {
+		int output[] =  CircuitOutputGenerator.generateOutput(trainingSet, circuit);
+		
+		int major = 0;
+		
+		for (int i : output) {
+			major = Math.max(major, i);
+		}
+		
+		while ((circuit.size() - 1) > major) {
+			circuit.remove(circuit.size() - 1);
+		}
+		
+	}
+
 	
 	
 	// Remove ports not used by Output
@@ -130,7 +153,9 @@ public class CircuitUtils {
 	private static void removeFromList(Circuit circuit, Set<Integer> canRemove, int index) {
 		Port port = circuit.get(index); 
 		if (!(port instanceof PortInput)) {
-			canRemove.remove(index);
+			if (!canRemove.remove(index)) { // If did not have then it has been removed before and don't need to continue
+				return;
+			}
 
 			if (port instanceof PortAnd) {
 				removeFromList(circuit, canRemove, ((PortAnd) port).getMinor());
@@ -146,14 +171,10 @@ public class CircuitUtils {
 				removeFromList(circuit, canRemove, ((PortNor) port).getMajor());
 			} else if (port instanceof PortNot) {
 				removeFromList(circuit, canRemove, ((PortNot) port).getIndex());
-			} else if (port instanceof PortMemoryMinorResetMajorSet) {
-				removeFromList(circuit, canRemove, ((PortMemoryMinorResetMajorSet) port).getMinor());
-				removeFromList(circuit, canRemove, ((PortMemoryMinorResetMajorSet) port).getMajor());
-			} else if (port instanceof PortMemoryMinorSetMajorReset) {
-				removeFromList(circuit, canRemove, ((PortMemoryMinorSetMajorReset) port).getMinor());
-				removeFromList(circuit, canRemove, ((PortMemoryMinorSetMajorReset) port).getMajor());
-			}
-			else {
+			} else if (port instanceof PortMemorySetReset) {
+				removeFromList(circuit, canRemove, ((PortMemorySetReset) port).getMinor());
+				removeFromList(circuit, canRemove, ((PortMemorySetReset) port).getMajor());
+			} else {
 				throw new RuntimeException("Inconsistency!");
 			}
 
@@ -198,6 +219,7 @@ public class CircuitUtils {
 
 					}
 				}
+				
 			}
 		} finally {
 			StatePool.retrieve(state);

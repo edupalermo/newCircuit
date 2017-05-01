@@ -46,7 +46,7 @@ public class CircuitToString {
 			sb.append("[");
 			sb.append(pair.getLeft());
 			sb.append("=");
-			sb.append(circuit.getBuffer(pair.getLeft(), Integer.class).toString());
+			sb.append(circuit.getGrade(pair.getLeft(), Integer.class).toString());
 			sb.append("] ");
 			
 		}

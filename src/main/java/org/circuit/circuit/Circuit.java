@@ -1,6 +1,9 @@
 package org.circuit.circuit;
 
+import static org.circuit.Application.CHECK_CONSISTENCY;
+
 import java.util.ArrayList;
+import java.util.Map;
 import java.util.TreeMap;
 
 import org.circuit.port.Port;
@@ -10,8 +13,6 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 
 	private static final long serialVersionUID = 1L;
 
-	private transient boolean checkConsistency = true;
-	
 	private transient TreeMap<String, Object> buffer = new TreeMap<String, Object>();
 	
 	private Circuit() {
@@ -21,6 +22,14 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 		for (int i = 0; i < size; i++) {
 			this.add(new PortInput(i));
 		}
+	}
+	
+	public void setGrade(String name, Object object) {
+		this.setBuffer(name, object);
+	}
+
+	public <T> T getGrade(String name, Class<T> clazz) {
+		return this.getBuffer(name, clazz);
 	}
 	
 	public void setBuffer(String name, Object object) {
@@ -61,7 +70,7 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 
 	public void removePort(int index) {
 		
-		if (checkConsistency) {
+		if (CHECK_CONSISTENCY) {
 			//logger.info(String.format("Checking [%d] size [%d]", index, size()));
 			for (int i = size()-1; i >= index + 1; i--) {
 				//logger.info(String.format("Checking [%d] %s", index, get(i).toString()));
@@ -85,8 +94,18 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 		for (Port port : this) {
 			circuit.add((Port) port.clone());
 		}
+		return circuit;
+	}
+
+	
+	public Circuit fullClone() {
+		Circuit circuit = (Circuit) this.clone();
+		
+		for (Map.Entry<String, Object> entry : this.buffer.entrySet()) {
+			circuit.setBuffer(entry.getKey(), entry.getValue());
+		}
 		
 		return circuit;
 	}
-	
+
 }

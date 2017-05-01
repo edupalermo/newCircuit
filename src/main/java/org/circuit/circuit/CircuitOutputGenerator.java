@@ -1,6 +1,5 @@
 package org.circuit.circuit;
 
-import org.apache.log4j.Logger;
 import org.circuit.pool.StatePool;
 import org.circuit.solution.Solution;
 import org.circuit.solution.TimeSlice;
@@ -8,7 +7,7 @@ import org.circuit.solution.TrainingSet;
 
 public class CircuitOutputGenerator {
 
-	private static final Logger logger = Logger.getLogger(CircuitOutputGenerator.class);
+	// private static final Logger logger = Logger.getLogger(CircuitOutputGenerator.class);
 
 	public static int[] generateOutput(TrainingSet trainingSet, Circuit circuit) {
 

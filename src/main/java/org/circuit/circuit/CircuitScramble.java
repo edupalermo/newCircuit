@@ -84,7 +84,7 @@ public class CircuitScramble {
 	private static int getInputSize(Circuit c) {
 		int i = 0;
 		
-		while (c.get(i) instanceof PortInput) {
+		while ((i < c.size()) && (c.get(i) instanceof PortInput)) {
 			i++;
 		};
 		

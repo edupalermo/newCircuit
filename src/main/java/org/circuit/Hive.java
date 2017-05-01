@@ -9,6 +9,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.log4j.Logger;
 import org.circuit.circuit.Circuit;
 import org.circuit.circuit.CircuitRandomGenerator;
+import org.circuit.circuit.CircuitScramble;
 import org.circuit.circuit.CircuitToString;
 import org.circuit.context.Context;
 import org.circuit.dao.CircuitWrapperDao;
@@ -83,8 +84,8 @@ public class Hive {
 			dump(context, population);
 			limitPopulation(population);
 			
+			mergeIfThereIsNewChamp(population, context, lastBetter);
 			persistIfThereIsNewChamp(population, context, lastBetter);
-			lastBetter = population.get(0);
 			
 			Population.genocide(context, population, POPULATION_LIMIT);			
 			
@@ -94,6 +95,9 @@ public class Hive {
 				context = newContext;
 				population = Population.reEvaluatePopulation(newContext, population);
 			}
+
+			lastBetter = population.get(0);
+
 			System.gc();
 		}
 	}
@@ -120,18 +124,44 @@ public class Hive {
 		Problem problem = context.getProblem();
 				
 		Circuit actualBetter = population.get(0);
-		if (actualBetter != lastBetter && (comparator.compare(actualBetter, lastBetter) < 0)) {
+		
+		if (comparator.compare(actualBetter, lastBetter) < 0) {
 			CircuitWrapperDao circuitWrapperDao = Application.springContext.getBean(CircuitWrapperDao.class);
 			CircuitWrapper circuitWrapper = circuitWrapperDao.create(problem, actualBetter);
 					
 			GradeDao gradeDao = Application.springContext.getBean(GradeDao.class);
 			
 			for (Pair<String, Boolean> pair: evaluator.getOrders()) {
-				gradeDao.create(circuitWrapper, trainingSetWrapper, evaluatorWrapper, pair.getLeft(), actualBetter.getBuffer(pair.getLeft(), Integer.class).intValue());
+				gradeDao.create(circuitWrapper, trainingSetWrapper, evaluatorWrapper, pair.getLeft(), actualBetter.getGrade(pair.getLeft(), Integer.class).intValue());
 			}
 			
 		}
 	}
+
+	
+	private static void mergeIfThereIsNewChamp(List<Circuit> population, Context context, Circuit lastBetter) {
+		EvaluatorWrapper evaluatorWrapper =context.getEvaluatorWrapper(); 
+		Evaluator evaluator = evaluatorWrapper.getEvaluator();
+		Comparator<Circuit> comparator = evaluator.getComparator();
+		TrainingSetWrapper trainingSetWrapper = context.getTrainingSetWrapper();
+		TrainingSet trainingSet = trainingSetWrapper.getTrainingSet();
+				
+		Circuit actualBetter = population.get(0);
+		
+		if (comparator.compare(actualBetter, lastBetter) < 0) {
+			Circuit simplifiedCircuit = (Circuit) actualBetter.clone();
+			simplifiedCircuit = CircuitScramble.join(trainingSet, simplifiedCircuit, lastBetter);
+			if (simplifiedCircuit.size() > 3000) { // This is done in better simplify, but some time it is better to do it first or we can run out of memory
+				CircuitUtils.simplifyByRemovingUnsedPorts(trainingSet, simplifiedCircuit);
+			}
+			CircuitUtils.betterSimplify(trainingSet, simplifiedCircuit);
+			evaluator.evaluate(trainingSet, simplifiedCircuit);
+			
+			Population.orderedAdd(population, evaluator.getComparator(), simplifiedCircuit);
+			
+		}
+	}
+
 	
 	public static void dump(Context context, List<Circuit> population) {
 		
@@ -142,7 +172,7 @@ public class Hive {
 		
 		logger.info("=====================================================");
 		for (int i = 0; i < Math.min(30, population.size()); i++) {
-			logger.info(String.format("[%5d] %s %.3f", i + 1, CircuitToString.toSmallString(evaluator, population.get(i)), evaluator.similarity(betterCircuit, population.get(i))));
+			logger.info(String.format("[%5d] %s", i + 1, CircuitToString.toSmallString(evaluator, population.get(i))));
 		}
 
 		if (population.size() > 3) {

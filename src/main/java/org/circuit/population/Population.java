@@ -1,5 +1,7 @@
 package org.circuit.population;
 
+import static org.circuit.Application.ADDITIONAL_INFO;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -16,10 +18,11 @@ import org.circuit.dao.CircuitWrapperDao;
 import org.circuit.entity.EvaluatorWrapper;
 import org.circuit.evaluator.Evaluator;
 import org.circuit.method.Method;
-import org.circuit.period.Period;
 import org.circuit.port.Port;
 import org.circuit.random.RandomWeight;
 import org.circuit.solution.TrainingSet;
+import org.circuit.time.Period;
+import org.circuit.time.TimeMeasure;
 import org.circuit.utils.CircuitUtils;
 import org.circuit.utils.IoUtils;
 import org.circuit.utils.RandomUtils;
@@ -30,26 +33,27 @@ public class Population {
 	
 	private static final boolean CHECK_CONSISTENCY = false;
 	
-	private static final int PERIOD_ENRICHMENT = 10000;
+	private static final int PERIOD_ENRICHMENT = 20000;
 	
 	private static final double ENRICH_PERCENTAGE = 10d;
 	
-	private static long lastDatabaseQuery = System.currentTimeMillis();
+	private static RandomWeight<Method> methodChosser = new RandomWeight<Method>();
 	
-	private static final long PERIOD_DATABASE_QUERY = 5 * 60 * 1000;
+	static {
+		methodChosser.addByWeight(5000, Method.RANDOM_ENRICH);
+		methodChosser.addByWeight(2000, Method.BETTER_RANDOM_ENRICH);
+		methodChosser.addByWeight(50, Method.SCRAMBLE_WITH_NEW_RANDOM);
+		methodChosser.addByWeight(10, Method.CIRCUITS_SCRABLE);
+		methodChosser.addByWeight(1, Method.RANDOM_CIRCUIT);
+
+		methodChosser.addByPeriod(15 * TimeMeasure.MINUTE, Method.RANDOM_FROM_DATABASE);
+		methodChosser.addByPeriod(2 * TimeMeasure.HOUR, Method.BETTER_FROM_DATABASE);
+	}	
 	
 	public static void enrich(Context context, List<Circuit> population) {
 		
 		EvaluatorWrapper evaluatorWrapper = context.getEvaluatorWrapper();
 		
-		RandomWeight<Method> methodChosser = new RandomWeight<Method>();
-		methodChosser.add(5000, Method.RANDOM_ENRICH);
-		methodChosser.add(5000, Method.BETTER_RANDOM_ENRICH);
-		methodChosser.add(50, Method.SCRAMBLE_WITH_NEW_RANDOM);
-		methodChosser.add(10, Method.CIRCUITS_SCRABLE);
-		methodChosser.add(1, Method.RANDOM_FROM_DATABASE);
-		methodChosser.add(1, Method.RANDOM_CIRCUIT);
-
 		Period period = new Period(PERIOD_ENRICHMENT);
 		
 		ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -64,14 +68,13 @@ public class Population {
 
 			Circuit newCircuit = null;
 
-			Method method = null;
-			if (System.currentTimeMillis() - lastDatabaseQuery > PERIOD_DATABASE_QUERY) {
-				method = Method.RANDOM_FROM_DATABASE;
-				lastDatabaseQuery = System.currentTimeMillis();
+			Method method = methodChosser.next();
+			
+			if (ADDITIONAL_INFO) {
+				logger.info(String.format("Method: %s", method.name()));
 			}
-			else {
-				method = methodChosser.next();
-			}
+			
+			TimeMeasure timeMeasure = new TimeMeasure();
 			
 			switch (method) {
 			case RANDOM_CIRCUIT:
@@ -115,7 +118,7 @@ public class Population {
 				break;
 			case RANDOM_FROM_DATABASE: {
 				CircuitWrapperDao circuitWrapperDao = Application.springContext.getBean(CircuitWrapperDao.class);
-				int raffled = RandomUtils.raffle(50);
+				int raffled = RandomUtils.raffle(100);
 				String query = evaluator.getByIndex(context.getProblem(), context.getTrainingSetWrapper(), raffled);
 				newCircuit = circuitWrapperDao.findByQuery(evaluatorWrapper, query);
 				
@@ -124,6 +127,20 @@ public class Population {
 					continue;
 				}
 				logger.info(String.format("Received a new circuit from database [%d]!", raffled));
+				
+			}
+
+				break;
+			case BETTER_FROM_DATABASE: {
+				CircuitWrapperDao circuitWrapperDao = Application.springContext.getBean(CircuitWrapperDao.class);
+				String query = evaluator.getByIndex(context.getProblem(), context.getTrainingSetWrapper(), 0);
+				newCircuit = circuitWrapperDao.findByQuery(evaluatorWrapper, query);
+				
+				if (newCircuit == null) {
+					logger.error(String.format("Fail to receive [%d] a new circuit from database!", 0));
+					continue;
+				}
+				logger.info(String.format("Received a new circuit from database [%d]!", 0));
 				
 			}
 
@@ -139,6 +156,11 @@ public class Population {
 				}
 			}
 
+			if (ADDITIONAL_INFO) {
+				logger.info(String.format("Circuit generated: %s", timeMeasure.elapsed()));
+				timeMeasure.reset();
+			}
+			
 			try {
 				evaluator.evaluate(trainingSet, newCircuit);
 			} catch (Throwable t) {
@@ -147,20 +169,20 @@ public class Population {
 				throw new RuntimeException("Inconsistency!");
 			}
 			
-			Circuit lastBetter = population.get(0);
+			if (ADDITIONAL_INFO) {
+				logger.info(String.format("Circuit evaluated:  %s", timeMeasure.elapsed()));
+				timeMeasure.reset();
+			}
 			
 			if (orderedAdd(population, evaluator.getComparator(), newCircuit) == 0) {
-				Circuit simplifiedCircuit = (Circuit) newCircuit.clone();
-				simplifiedCircuit = CircuitScramble.join(trainingSet, simplifiedCircuit, lastBetter);
-				if (simplifiedCircuit.size() > 3000) { // This is done in better simplify, but some time it is better to do it first or we can run out of memory
-					CircuitUtils.simplifyByRemovingUnsedPorts(trainingSet, simplifiedCircuit);
-				}
-				CircuitUtils.betterSimplify(trainingSet, simplifiedCircuit);
-				evaluator.evaluate(trainingSet, simplifiedCircuit);
-				
-				orderedAdd(population, evaluator.getComparator(), simplifiedCircuit);
-				
+				java.awt.Toolkit.getDefaultToolkit().beep();
 			}
+			
+			if (ADDITIONAL_INFO) {
+				logger.info(String.format("Circuit added to population:  %s", timeMeasure.elapsed()));
+				timeMeasure.reset();
+			}
+
 			
 			//logger.info(String.format("Took %d", (System.currentTimeMillis() - initial)));
 
@@ -199,7 +221,7 @@ public class Population {
 	}
 
 	
-	private static int orderedAdd(List<Circuit> population, Comparator<Circuit> comparator, Circuit newCircuit) {
+	public static int orderedAdd(List<Circuit> population, Comparator<Circuit> comparator, Circuit newCircuit) {
 		
 		if (newCircuit == null) {
 			throw new RuntimeException("Cannot add null circuit!");

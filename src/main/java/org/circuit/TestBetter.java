@@ -1,8 +1,11 @@
 package org.circuit;
 
+import java.util.Arrays;
+
 import org.apache.log4j.Logger;
 import org.circuit.circuit.Circuit;
 import org.circuit.circuit.CircuitOutputGenerator;
+import org.circuit.circuit.CircuitToString;
 import org.circuit.dao.CircuitWrapperDao;
 import org.circuit.dao.EvaluatorWrapperDao;
 import org.circuit.dao.ProblemDao;
@@ -13,6 +16,7 @@ import org.circuit.entity.TrainingSetWrapper;
 import org.circuit.evaluator.Evaluator;
 import org.circuit.solution.StringSolution;
 import org.circuit.solution.TrainingSet;
+import org.circuit.utils.CircuitUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -44,9 +48,26 @@ public class TestBetter {
 			
 			String query = evaluator.getByIndex(problem, trainingSetWrapper, 0);
 			Circuit circuit = circuitWrapperDao.findByQuery(evaluatorWrapper, query);
-
-			int[] output = CircuitOutputGenerator.generateOutput(trainingSet, circuit);
 			
+			dumpCircuit(evaluator, trainingSet, circuit);
+			logger.info("***********************************************************************************");
+			Circuit newCircuit = (Circuit) circuit.clone();
+			//CircuitUtils.betterSimplify(trainingSet, newCircuit);
+			CircuitUtils.removeOverhead(trainingSet, newCircuit);
+			CircuitUtils.useLowerPortsWithSameOutput(trainingSet, newCircuit);
+			dumpCircuit(evaluator, trainingSet, newCircuit);
+			
+			logger.info("***********************************************************************************");
+			Circuit again = (Circuit) newCircuit.clone();
+			CircuitUtils.betterSimplify(trainingSet, again);
+			//CircuitUtils.useLowerPortsWithSameOutput(trainingSet, again);
+			dumpCircuit(evaluator, trainingSet, again);
+			
+			//System.exit(0);
+			
+			
+			
+			int[] output = CircuitOutputGenerator.generateOutput(trainingSet, circuit);
 			
 			for (char c = 'a'; c <= 'z'; c++) {
 				dump(c, circuit, output);
@@ -97,6 +118,15 @@ public class TestBetter {
 			answer = "error";
 		}
 		logger.info(c + " [" + answer + "]");
+		
+	}
+	
+	public static void dumpCircuit(Evaluator evaluator, TrainingSet trainingSet, Circuit circuit) {
+		evaluator.evaluate(trainingSet, circuit);
+		logger.info("Better: " + CircuitToString.toString(evaluator, circuit));
+
+		int[] output = CircuitOutputGenerator.generateOutput(trainingSet, circuit);
+		logger.info("Output: " + Arrays.toString(output));
 		
 	}
 	

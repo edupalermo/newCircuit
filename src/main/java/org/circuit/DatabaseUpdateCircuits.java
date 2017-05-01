@@ -55,7 +55,7 @@ public class DatabaseUpdateCircuits {
 				Circuit circuit = circuitWrapper.getCircuit();
 				evaluator.evaluate(trainingSet, circuit);
 				for (Pair<String, Boolean> pair : evaluator.getOrders()) {
-					gradeDao.create(circuitWrapper, trainingSetWrapper, evaluatorWrapper, pair.getKey(), circuit.getBuffer(pair.getKey(), Integer.class).intValue());
+					gradeDao.create(circuitWrapper, trainingSetWrapper, evaluatorWrapper, pair.getKey(), circuit.getGrade(pair.getKey(), Integer.class).intValue());
 				}
 				
 				logger.info(String.format("%s", CircuitToString.toSmallString(evaluator, circuit)));

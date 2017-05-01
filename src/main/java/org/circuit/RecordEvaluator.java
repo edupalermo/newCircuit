@@ -1,6 +1,5 @@
 package org.circuit;
 
-import org.apache.log4j.Logger;
 import org.circuit.dao.EvaluatorWrapperDao;
 import org.circuit.dao.ProblemDao;
 import org.circuit.entity.Problem;
@@ -10,7 +9,7 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 public class RecordEvaluator {
-	private static final Logger logger = Logger.getLogger(RecordEvaluator.class);
+	//private static final Logger logger = Logger.getLogger(RecordEvaluator.class);
 	
 	public static void main(String[] args) {
 		

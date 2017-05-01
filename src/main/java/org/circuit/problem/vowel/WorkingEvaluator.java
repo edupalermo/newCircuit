@@ -26,8 +26,8 @@ public class WorkingEvaluator implements Evaluator, Serializable {
 
 	@Override
 	public void evaluate(TrainingSet trainingSet, Circuit circuit) {
-		circuit.setBuffer(GRADE_HIT, CircuitHitsEvaluator.evaluate(trainingSet, circuit));
-		circuit.setBuffer(GRADE_CIRCUIT_SIZE, Integer.valueOf(circuit.size()));
+		circuit.setGrade(GRADE_HIT, CircuitHitsEvaluator.evaluate(trainingSet, circuit));
+		circuit.setGrade(GRADE_CIRCUIT_SIZE, Integer.valueOf(circuit.size()));
 	}
 	
 	@Override
@@ -42,14 +42,14 @@ public class WorkingEvaluator implements Evaluator, Serializable {
 				for (Pair<String, Boolean> pair : getOrders()) {
 					
 					if (pair.getRight().booleanValue()) {
-						answer = c1.getBuffer(pair.getLeft(), Integer.class).compareTo(c2.getBuffer(pair.getLeft(), Integer.class));
+						answer = c1.getGrade(pair.getLeft(), Integer.class).compareTo(c2.getGrade(pair.getLeft(), Integer.class));
 						if (answer != 0) {
 							return answer;
 						}
 						
 					}
 					else {
-						answer = c2.getBuffer(pair.getLeft(), Integer.class).compareTo(c1.getBuffer(pair.getLeft(), Integer.class));
+						answer = c2.getGrade(pair.getLeft(), Integer.class).compareTo(c1.getGrade(pair.getLeft(), Integer.class));
 						if (answer != 0) {
 							return answer;
 						}
@@ -60,7 +60,7 @@ public class WorkingEvaluator implements Evaluator, Serializable {
 				
 				
 				if (c1.size() != c2.size()) {
-					logger.warn("They should have the same size!");
+					logger.warn(String.format("They should have the same size! [%d,%d]", c1.size(), c2.size()));
 					logger.warn(CircuitToString.toString(getOuter(), c1));
 					logger.warn(CircuitToString.toString(getOuter(), c2));
 				}
@@ -120,7 +120,7 @@ public class WorkingEvaluator implements Evaluator, Serializable {
 	@Override
 	public double similarity(Circuit c1, Circuit c2) {
 		
-		if (c1.getBuffer(GRADE_HIT, Integer.class).intValue() != c2.getBuffer(GRADE_HIT, Integer.class).intValue()) {
+		if (c1.getGrade(GRADE_HIT, Integer.class).intValue() != c2.getGrade(GRADE_HIT, Integer.class).intValue()) {
 			return 0d;
 		}
 		

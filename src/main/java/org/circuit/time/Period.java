@@ -1,4 +1,4 @@
-package org.circuit.period;
+package org.circuit.time;
 
 public class Period {
 	
