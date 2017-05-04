@@ -21,6 +21,7 @@ import org.circuit.method.Method;
 import org.circuit.port.Port;
 import org.circuit.random.RandomWeight;
 import org.circuit.solution.TrainingSet;
+import org.circuit.stat.StatData;
 import org.circuit.time.Period;
 import org.circuit.time.TimeMeasure;
 import org.circuit.utils.CircuitUtils;
@@ -40,17 +41,17 @@ public class Population {
 	private static RandomWeight<Method> methodChosser = new RandomWeight<Method>();
 	
 	static {
-		methodChosser.addByWeight(5000, Method.RANDOM_ENRICH);
-		methodChosser.addByWeight(2000, Method.BETTER_RANDOM_ENRICH);
+		methodChosser.addByWeight(1000, Method.RANDOM_ENRICH);
+		methodChosser.addByWeight(400, Method.BETTER_RANDOM_ENRICH);
 		methodChosser.addByWeight(50, Method.SCRAMBLE_WITH_NEW_RANDOM);
 		methodChosser.addByWeight(10, Method.CIRCUITS_SCRABLE);
 		methodChosser.addByWeight(1, Method.RANDOM_CIRCUIT);
 
 		methodChosser.addByPeriod(15 * TimeMeasure.MINUTE, Method.RANDOM_FROM_DATABASE);
-		methodChosser.addByPeriod(2 * TimeMeasure.HOUR, Method.BETTER_FROM_DATABASE);
+		methodChosser.addByPeriod(1 * TimeMeasure.HOUR, Method.BETTER_FROM_DATABASE);
 	}	
 	
-	public static void enrich(Context context, List<Circuit> population) {
+	public static void enrich(Context context, List<Circuit> population, StatData statData) {
 		
 		EvaluatorWrapper evaluatorWrapper = context.getEvaluatorWrapper();
 		
@@ -69,10 +70,6 @@ public class Population {
 			Circuit newCircuit = null;
 
 			Method method = methodChosser.next();
-			
-			if (ADDITIONAL_INFO) {
-				logger.info(String.format("Method: %s", method.name()));
-			}
 			
 			TimeMeasure timeMeasure = new TimeMeasure();
 			
@@ -156,10 +153,8 @@ public class Population {
 				}
 			}
 
-			if (ADDITIONAL_INFO) {
-				logger.info(String.format("Circuit generated: %s", timeMeasure.elapsed()));
-				timeMeasure.reset();
-			}
+			statData.setData(method, StatData.Field.GENERATION, timeMeasure.elapsed());
+			timeMeasure.reset();
 			
 			try {
 				evaluator.evaluate(trainingSet, newCircuit);
@@ -168,23 +163,17 @@ public class Population {
 				System.out.println(String.format("Object with error [%s]", IoUtils.objectToBase64(newCircuit)));
 				throw new RuntimeException("Inconsistency!");
 			}
-			
-			if (ADDITIONAL_INFO) {
-				logger.info(String.format("Circuit evaluated:  %s", timeMeasure.elapsed()));
-				timeMeasure.reset();
-			}
-			
+
+			statData.setData(method, StatData.Field.EVALUATION, timeMeasure.elapsed());
+			timeMeasure.reset();
+
 			if (orderedAdd(population, evaluator.getComparator(), newCircuit) == 0) {
 				java.awt.Toolkit.getDefaultToolkit().beep();
-			}
-			
-			if (ADDITIONAL_INFO) {
-				logger.info(String.format("Circuit added to population:  %s", timeMeasure.elapsed()));
-				timeMeasure.reset();
+				logger.info("NEW BEST!");
 			}
 
-			
-			//logger.info(String.format("Took %d", (System.currentTimeMillis() - initial)));
+			statData.setData(method, StatData.Field.ADD_TO_POPULATION, timeMeasure.elapsed());
+			timeMeasure.reset();
 
 		}
 

@@ -13,8 +13,14 @@ public class TimeMeasure {
 	public TimeMeasure() {
 		this.start = System.currentTimeMillis();
 	}
+
 	
-	public String elapsed() {
+	public long elapsed() {
+		return System.currentTimeMillis() - this.start;
+	}
+
+	
+	public String formatedElapsed() {
 		long delta = System.currentTimeMillis() - this.start;
 		
 		if (delta == 0) {

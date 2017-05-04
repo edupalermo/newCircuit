@@ -24,6 +24,7 @@ import org.circuit.entity.TrainingSetWrapper;
 import org.circuit.evaluator.Evaluator;
 import org.circuit.population.Population;
 import org.circuit.solution.TrainingSet;
+import org.circuit.stat.StatData;
 import org.circuit.utils.CircuitUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
@@ -77,11 +78,15 @@ public class Hive {
 		context.getEvaluatorWrapper().getEvaluator().evaluate(context.getTrainingSetWrapper().getTrainingSet(), newCircuit);
 		population.add(newCircuit);
 
+		StatData statData = new StatData();
+		
 		Circuit lastBetter = population.get(0);
 		
 		for (;;) {
-			Population.enrich(context, population);
+			Population.enrich(context, population, statData);
 			dump(context, population);
+			statData.dump();
+			statData.endSession();
 			limitPopulation(population);
 			
 			mergeIfThereIsNewChamp(population, context, lastBetter);
@@ -171,7 +176,7 @@ public class Hive {
 		Circuit betterCircuit = population.get(0);
 		
 		logger.info("=====================================================");
-		for (int i = 0; i < Math.min(30, population.size()); i++) {
+		for (int i = 0; i < Math.min(10, population.size()); i++) {
 			logger.info(String.format("[%5d] %s", i + 1, CircuitToString.toSmallString(evaluator, population.get(i))));
 		}
 
